@@ -48,7 +48,7 @@
 #include <mainbus.h>
 #include <vnode.h>
 #include <kern/sysexits.h>
-
+#include <kern/wait.h>
 #include "opt-synchprobs.h"
 
 
@@ -793,6 +793,9 @@ thread_exit(int exitcode)
         (void)exitcode;  // suppress warning until code gets written
 
 	cur = curthread;
+
+	DEBUG(DB_SYSCALL, "Thread %s exiting due to %d with value %d\n",
+			cur->t_name, _WWHAT(exitcode), _WVAL(exitcode));
 
 	/* VFS fields */
 	if (cur->t_cwd) {

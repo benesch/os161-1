@@ -306,8 +306,7 @@ MACHINE=mips
 # Compilation
 DEBUG=-O2
 WARNINGS=-Wall -W -Wwrite-strings -Wmissing-prototypes
-#WERROR=-Werror
-WERROR=
+WERROR=-Werror
 
 #
 # Less-likely-to-need-setting

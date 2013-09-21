@@ -9,7 +9,7 @@ SUBDIRS=add argtest badcall bigexec bigfile conman crash ctest dirconc \
 	dirseek dirtest f_test farm faulter filetest forkbomb forktest \
 	guzzle hash hog huge kitchen malloctest matmult palin parallelvm \
 	psort randcall rmdirtest rmtest sink sort sty tail tictac triplehuge \
-	triplemat triplesort exittest
+	triplemat triplesort exittest printchartest
 
 # But not:
 #    userthreads    (no support in kernel API in base system)

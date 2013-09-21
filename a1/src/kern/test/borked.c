@@ -6,20 +6,31 @@
 #define TRUE  1
 #define FALSE 0
 
+/* show1 requires a check to ensure the string s is not NULL with a length
+ * of at least one, and integer comparisons need to be unsigned to account
+ * for negative values.
+ */
 static 
 void show1(const char *s) {
-	int i;
-
-	for (i = 0; i < strlen(s); i++) 
-		kprintf("%c", s[i]);
+	unsigned int i;
+	if (s && strlen(s) > 0) {
+		for (i = 0; i < strlen(s); i++)
+			kprintf("%c", s[i]);
+	}
 	kprintf("\n");
 }
 
+/* show2 requires a check to ensure the string s is not NULL with a length
+ * of at least one, and integer comparisons need to be unsigned to account
+ * for negative values.
+ */
 static 
 void show2(const char *s) {
-	int i;
-	for (i = 0; i <= strlen(s) - 1; i++) 
-		kprintf("%c", s[i]);
+	unsigned int i;
+	if (s && strlen(s) > 0) {
+		for (i = 0; i <= strlen(s) - 1; i++)
+			kprintf("%c", s[i]);
+	}
 	kprintf("\n");
 }
 
@@ -31,9 +42,10 @@ void test1() {
 
 /************************************************************/
 
+/* is_equal requires a valid equal to operator. */
 static
 int is_equal(int a, int b) {
-	if ((a = b))
+	if (a == b)
 		return TRUE;
 	else
 		return FALSE;
@@ -73,13 +85,17 @@ int sum(int x, int y, int z) {
 	return sum;
 }
 
-
+/* helper fails to initialize the bar because the pointer mybar_ptr does not
+ * reference any memory address.
+ */
 static
 struct bar *helper(int x, int y, int z) {
-	struct bar *mybar;
-	
-	init_bar(mybar, x, y, z);
-	return mybar;
+	/* mybar is allocated the memory needed for the structure with mybar_ptr
+	 * pointing to its address */
+	struct bar *mybar_ptr, mybar;
+	mybar_ptr = &mybar;
+	init_bar(mybar_ptr, x, y, z);
+	return mybar_ptr;
 }	 
 
 static
@@ -108,12 +124,12 @@ void test3() {
 
 #define SIZE 16*1024*1024 /* 16 MB */
 
+/* test4 requires a check to ensure the buffer buf is not NULL before proceeding. */
 static
 int test4() {
 	char *buf = (char *)kmalloc(SIZE);
-	
-	strcpy(buf,"Supercalifragilisticexpialidocious");
-	
+	if (buf)
+		strcpy(buf,"Supercalifragilisticexpialidocious");
 	kfree(buf);
 	return 0;
 }

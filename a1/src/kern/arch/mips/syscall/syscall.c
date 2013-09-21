@@ -35,7 +35,7 @@
 #include <thread.h>
 #include <current.h>
 #include <syscall.h>
-
+#include <kern/wait.h>
 
 /*
  * System call dispatcher.
@@ -75,9 +75,7 @@
  * stack, starting at sp+16 to skip over the slots for the
  * registerized values, with copyin().
  */
-void
-syscall(struct trapframe *tf)
-{
+void syscall(struct trapframe *tf) {
 	int callno;
 	int32_t retval;
 	int err;
@@ -100,23 +98,37 @@ syscall(struct trapframe *tf)
 	retval = 0;
 
 	switch (callno) {
-	    case SYS_reboot:
-		err = sys_reboot(tf->tf_a0);
-		break;
-
-	    case SYS___time:
-		err = sys___time((userptr_t)tf->tf_a0,
-				 (userptr_t)tf->tf_a1);
-		break;
-
-	    /* Add stuff here */
- 
-	    default:
-		kprintf("Unknown syscall %d\n", callno);
-		err = ENOSYS;
-		break;
+		case SYS_reboot:
+			err = sys_reboot(tf->tf_a0);
+			break;
+	
+		case SYS___time:
+			err = sys___time((userptr_t) tf->tf_a0, (userptr_t) tf->tf_a1);
+			break;
+	
+		/* Add stuff here */
+		case SYS__exit:
+			thread_exit(_MKWAIT_EXIT(tf->tf_a0));
+			break;
+		case SYS_printchar:
+			/*
+			 * If the character is printed successfully, signal successful return
+			 * in the retval and err value. Otherwise, set the error code to 1.
+			 */
+			retval = sys_printchar(tf->tf_a0);
+			if (retval == 1) {
+				err = 0;
+			} else {
+				err = 1;
+			}
+			DEBUG(DB_SYSCALL, "Thread %s printing %c, return value of %d, and error value of %d\n",
+				curthread->t_name, (char) tf->tf_a0, retval, err);
+			break;
+		default:
+			kprintf("Unknown syscall %d\n", callno);
+			err = ENOSYS;
+			break;
 	}
-
 
 	if (err) {
 		/*
@@ -125,19 +137,18 @@ syscall(struct trapframe *tf)
 		 * code in errno.
 		 */
 		tf->tf_v0 = err;
-		tf->tf_a3 = 1;      /* signal an error */
-	}
-	else {
+		tf->tf_a3 = 1; /* signal an error */
+	} else {
 		/* Success. */
 		tf->tf_v0 = retval;
-		tf->tf_a3 = 0;      /* signal no error */
+		tf->tf_a3 = 0; /* signal no error */
 	}
-	
+
 	/*
 	 * Now, advance the program counter, to avoid restarting
 	 * the syscall over and over again.
 	 */
-	
+
 	tf->tf_epc += 4;
 
 	/* Make sure the syscall code didn't forget to lower spl */
@@ -154,8 +165,6 @@ syscall(struct trapframe *tf)
  *
  * Thus, you can trash it and do things another way if you prefer.
  */
-void
-enter_forked_process(struct trapframe *tf)
-{
-	(void)tf;
+void enter_forked_process(struct trapframe *tf) {
+	(void) tf;
 }

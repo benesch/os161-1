@@ -649,7 +649,7 @@ static struct {
 	{ "km1",	malloctest },
 	{ "km2",	mallocstress },
 #if OPT_A1DEBUG
-	{ "dbgt",	dbgtest 0-4},
+	{ "dbgt",	dbgtest },
 #endif
 	{ "tt1",	threadtest },
 	{ "tt2",	threadtest2 },
