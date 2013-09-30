@@ -109,6 +109,10 @@ syscall(struct trapframe *tf)
 				     (userptr_t)tf->tf_a1);
 		    break;
 
+            case SYS__exit:
+                    thread_exit(_MKWAIT_EXIT(tf->tf_a0));
+                    panic("Returning from exit\n");
+
             /* ASST2: These implementations of read and write only work for
              * console I/O (stdin, stdout and stderr file descriptors)
              */

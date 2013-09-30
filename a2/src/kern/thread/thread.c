@@ -652,7 +652,7 @@ thread_switch(threadstate_t newstate, struct wchan *wc)
 		wchan_unlock(wc);
 		break;
 	    case S_ZOMBIE:
-		cur->t_wchan_name = "ZOMBIE";
+ 	cur->t_wchan_name = "ZOMBIE";
 		threadlist_addtail(&curcpu->c_zombies, cur);
 		break;
 	}
@@ -833,7 +833,8 @@ thread_exit(int exitcode)
 	struct thread *cur;
         (void)exitcode;  // suppress warning until code gets written
 
-	cur = curthread;
+	cur = curthread; /* exiting. */
+        DEBUG(DB_SYSCALL, "Thread %s exiting due to %d with value %d", cur->t_name, _WWHAT(exitcode), _WVAL(exitcode));
 
 	/* VFS fields */
 	if (cur->t_cwd) {
