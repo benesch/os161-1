@@ -1,0 +1,82 @@
+Assignment 2: Processes, waitpid and kill
+Group07
+
+# Code Interview or Documentation (15%)
+14 :
+
+# Correctness (70%)
+
+#Task 1: Passing Arguments (20)
+
+5 : testing - testbin/argtest works with 0-4 arguments having different 
+  lengths (5)
+5 : testing - testbin/add works with 2 arguments, with varying numbers of 
+  digits (5) 
+4 : inspection - correctly copies strings, records start user address, and copies
+  pointers for argv array, including alignment and null termination (5)
+4 : inspection - frees args and any other kmalloc'd memory before going to user
+  mode, checks for errors from kmalloc, copyout, etc. and cleans up on error
+  return (5)
+
+COMMENTS ON TASK 1
+- does not check for errors from copyout/copyoutstr (-1)
+- If runprogram fails (returns an error to cmd_progthread in menu.c), the 
+  copied args are not freed. Must either free in runprogram() before returning
+  an error, or else free in cmd_progthread when runprogram fails (-1)
+
+
+
+
+#Task2: Extending Thread System (20)
+10 : testing - waittest 1-5 completes correctly (10)
+0 : testing - menu thread waits for child and "&" works correctly (5)
+5 : inspection - pid_join / pid_detach / pid_exit work together appropriately,
+  check for errors and return reasonable error codes, and ensure pidinfo struct
+  is freed after last join finishes, or at detach if there are no joiners (5)
+
+COMMENTS ON TASK 2
+
+
+
+
+# Task 3: System Calls - getpid and waitpid (15)
+2.1 : testing - waitpid handles bad args from user and returns correct error 
+  codes (4)
+4 : testing - waitpid gets correct exitstatus from child, handles WNOHANG (4)
+3 : inspection - getpid returns correct value, curthread->t_pid (3)
+3 : inspection - waitpid returns correct values, using copyout to store into 
+  user pointer status, and returns correct and error codes (4)
+
+# Task 3: System Calls - kill (15)
+1.2 : testing - kill handles bad args from user and returns correct error codes (2)
+4 : testing - SIGKILL, SIGHUP, SIGINT, SIGTERM terminate child process that is 
+  in infinite loop (4)
+1 : testing - SIGWINCH, SIGINFO have no observable effect, appear ignored (1)
+2.9 : testing - SIGSTOP and SIGCONT sent to siblings have expected effect (3)
+2 : inspection - kill sets flags in pidinfo struct for target thread and 
+  different signals do not overwrite previously set signals (2)
+1 : inspection - SIGCONT wakes up target when signal is sent (1)
+1 : inspection - threads check own signals before returning to userspace 
+  in mips_trap (1)
+1 : inspection - SIGSTOP / SIGCONT use new condition variable in pidinfo struct,
+  not sharing same condition used by pid_join / pid_exit or some ad hoc 
+  synchronization strategy (1)
+
+COMMENTS ON TASK 3
+- waitpid does not use copyout to copy the status to user space. (-1)
+
+
+
+
+# Style and Efficiency (15%)
+3 : Code compiles cleanly with no warnings (3)
+3 : All new calls use appropriate functions from the PID module (3)
+4 : Error handling frees any allocated objects that are no longer needed (4)
+5 : New code is clean, commented, and easy to read (5)
+
+88.2: Total (100)
+
+Comments - 
+
+Refer to file "os161tester.output" for details on how your submission handled
+the tests.

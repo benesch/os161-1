@@ -1,0 +1,35 @@
+g1luongg
+Assignment 1
+
+0: Grace days used
+
+Part 1: Introduction to OS/161 (7)
+--------------------------------------------
+
+Modify Greeting
+ 2: cdfid appears in OS/161 greeting (autotest greeting test)
+
+Debugging
+ 1: dbgt 1 does not crash kernel (autotest dbgt 1)
+ 1: dbgt 2 shows 7 is NOT equal to 42 (autotest dbgt 2)
+ 1: dbgt 3 computes correct sum, does not crash (autotest dbgt 3)
+ 0: dbgt 4 does not crash kernel, returns ENOMEM (autotest dbgt 4)
+0.5: inspection - kmalloc'd mem is kfree'd, bugs explained
+
+Part 2: System Calls (10)
+
+SYS__exit
+ 3: testbin/exittest exits and prints expected DEBUG message (autotest exit test)
+0.5: inspection - case for SYS__exit correctly encodes value from tf_a0 register
+  	     - encoded value is passed to thread_exit
+	     - DEBUG message is in thread_exit
+
+SYS_printchar
+ 4: testbin/printchartest prints expected line (autotest printchar test)
+0.5: inspection - printchar handler checks for errors and returns error codes
+  	     - at least one DEBUG message included
+
+Part 3: Register Your Team (2)
+ 2: team registration completed
+
+Total: 15.5 / 19

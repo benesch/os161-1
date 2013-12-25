@@ -1,0 +1,84 @@
+1. What happens to a thread when it exits (i.e., calls thread_exit() )? What about when it sleeps?
+thread_exit() - thread.c L831
+- Virtual file system for the thread is cleared (VFS)
+- Reference count to the thread's current working directory is decreased.
+- Address space for the thread is cleared. (Virtual Address space (VM) - t_addrspace)
+- Stack guard band for the thread is checked - tells us if a stack overflowed.
+- Set priority level to high - disables all interrupts. (splhigh())
+- Thread state is switched to zombie and processor picks up another thread.
+wchan_sleep(struct wchan *wc) - thread.c L1078
+- Thread is switched to sleep mode and processor picks up another thread.
+- Yield the cpu to another process, and go to sleep, on the specified wait channel WC.
+
+2. What function(s) handle(s) a context switch?
+thread_switch() - thread.c L592
+
+3. How many thread states are there? What are they?
+thread.h L61
+- S_RUN - running
+- S_READY - ready to run
+- S_SLEEP - sleeping
+- S_ZOMBIE - zombie; exited but not yet deleted
+
+4. What does it mean to turn interrupts off? How is this accomplished? Why is it important to turn off interrupts in the thread subsystem code?
+- Current working thread will not be interrupted until interrupts are re-enabled, meaning the code section between disabling and re-enabling interrupts will be executed as if atomically.
+- Calling cpu_irqoff (cpu.c L155) sets interrupt enable mode bit.
+- Calling splx(int spl) (spl.c L133) disables or enables interrupts and adjust the current set priority levels (spl) and returns old spl level. Refer to spl.h, for example, spl = splhigh() sets IPL to the highest value, and disables all interrupts.
+- In thread.c, thread_switch would disable interrupts so the process can happen atomically.
+
+5. What happens when a thread wakes up another thread? How does a sleeping thread get to run again?
+- Call to wchan_wakeone (thread.c L1090) wakes up one thread by putting it in CPU's runqueue. When thread_switch happens, the woken up thread may run again (if it's chosen).
+- Calling thread_make_runnable (thread.c L451) will make a thread runnable again.
+
+6. Semaphores are implemented using spinlocks. Where are spinlocks implemented? And what does it mean to get the data for a spinlock?
+- Spinlocks are implemented in spinlock.c
+- Spinlocks are implemented when modifying wchannel, CPU's runqueue, etc.
+? Check if one holds the spinlock already.
+- spinlock_data_get (spinlock.h L58) returns spinlock_data_t which is a value needed to actually spin on. Tells you if the lock is held.
+	val = 0 -> spinlock release
+
+7. Are OS/161 semaphores "strong" or "weak"?
+- Implemented "strong" (FIFO), but is not promised by the interface. (wchan.h L78)
+
+8. Why does the lock API in OS/161 provide lock_do_i_hold(), but not lock_get_holder() ?
+- lock_do_i_hold() is implemented in synch.c L223
+- lock_do_i_hold(lock) checks if the current lock holder (thread) == current thread effectively
+checks if the current thread is holding the lock
+- If function A requires a lock and calls function B, lock_do_i_hold is a way for function B of asserting that the lock is held by the thread.
+- ?lock_get_holder may enable thread to overwrite the holder of the lock, which would be problematic.
+
+9. What are the ELF magic numbers?
+- elf.h L82
+- ELFMAG[0..3] -> 0x7f, E, L, F
+- ELF file header contains a property e_ident that holds the magic number
+- Manpage of ELF http://man7.org/linux/man-pages/man5/elf.5.html
+
+10. What is the difference between UIO_USERISPACE and UIO_USERSPACE? When should one use UIO_SYSSPACE instead?
+- uio.h L50
+- UIO_USERISPACE contains user process code and UIO_USERSPACE contains user process data.
+- UIO_USERISPACE is used when the process is happening at the user space, and executable.
+(loadelf.c L101 - uio_segflg is set to UIO_USERISPACE if executable)
+- UIO_SYSSPACE must be used when the source/destination of data transfer are in the kernel space. Handling of kernel data.
+
+11. Why can the struct uio that is used to read in a segment be allocated on the stack in load_segment() (i.e., where does the memory read actually go)?
+loadelf.c L77, uio.h L67
+- The memory is read into a virtual address, which the struct uio's pointer variable points to. Therefore the struct itself can be allocated on the stack.
+- Data is read from the file to uio. 
+
+12. In runprogram(), why is it important to call vfs_close() before going to usermode?
+runprogram.c L89
+- The file must be closed, so that if another thread or process wants to execute the same program, it can open the file.
+- ? Need to end processes in kernel space before switching to user mode
+
+13. What function forces the processor to switch into usermode? Is this function machine dependent?
+trap.c L366
+- mips_usermode() function for entering user mode. Called in enter_forked_process() and enter_new_process()
+spl.h L36
+- The function uses machine-independent interface to disable all interrupts.
+
+14. The mips_trap function handles all exceptions. Is it possible to determine whether the exception being handled was triggered during user execution or kernel execution?
+trap.c L140
+- Yes.
+Thread can only check whether or not it is in the kernel execution.
+- iskern = (tf->tf_status & CST_KUp) == 0;
+https://csc.cdf.toronto.edu/mybb/showthread.php?tid=1319

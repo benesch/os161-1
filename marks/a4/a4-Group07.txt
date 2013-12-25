@@ -1,0 +1,85 @@
+Group07
+Assignment 4
+
+  
+
+OPEN FILE TABLE (4/5)  
+  filetable design/setup/cleanup:
+    - initialization called during runprogram 
+      (only user processes need filetables)                        0 / 1
+      - proper cleanup on file close and   
+        filetable_destroy (called when thread exits)
+    - supports open (adding fd to table), lookup given		   2 / 2
+      an fd, maintains offset, mode, etc.
+    - supports proper sharing of open files for dup2        
+      (e.g.  reference counting)		  	           2 / 2
+
+  COMMENTS:
+  - in runprogram, does not check return value from filetable_init (-0.25)
+  - filetable is not deleted on thread exit (memory leak) (-0.5)
+  - filetable is not shared across processes, does not need spinlock
+  - filetable_init does not check for errors from kmalloc (-0.5)
+
+NEW SYSTEM CALLS (28.5/30)
+  System calls are evaluated on:
+  1) ability to pass badcall tests
+     - proper handling of user pointers and checking for
+       bad file descriptors, etc. is checked by these tests
+  2) proper cleanup before either normal or error return
+  3) correct behavior when used correctly (psh tests)
+
+  open 						2.5 / 3
+  close						  3 / 3
+  dup2						  3 / 3
+  read       					  3 / 3
+  write						  3 / 3
+  lseek						  3 / 3
+  chdir           				  3 / 3
+  getcwd					  2 / 3 
+  mkdir						  3 / 3
+  rmdir						  3 / 3
+
+  COMMENTS:
+  - file_open does not check for errors from kmalloc (-0.5)
+  - sys___getcwd sets retval to result (0) on success, but should
+    be number of chars copied (*retval = buflen - user_uio.uio_resid;) (-1)
+
+SUBDIRECTORIES IN SFS (24.5/25)
+
+  sfs_mkdir						  5 / 5
+  - creates new fs object of type SFS_TYPE_DIR,
+  - creates "." and ".." entries in new directory
+  - links new directory into parent
+  - increases parent linkcount, makes both inodes dirty
+  - handles refcounts correctly
+  - checks for errors (e.g. name already exists)
+
+  sfs_rmdir						4.5 / 5
+  - ensures directory is empty before removing
+  - adjusts linkcounts on self and parent
+  - removes entry from parent directory
+  - handles refcounts correctly
+  - checks for errors
+
+  sfs_lookparent					  5 / 5
+  - correctly traverses path provided
+  - handles refcounts correctly
+  - checks for errors
+
+  sfs_lookup						  5 / 5
+  - correctly traverses path provided
+  - handles refcounts correctly
+  - checks for errors
+
+  sfs_namefile						  5 / 5
+  - correctly builds path string for given vnode
+  - checks for errors
+
+  COMMENTS:
+  - sfs_mkdir should really increment newdir's linkcount by 2 (1 for 
+    link from parent, one for link from own "." entry), but real problem
+    is that sfs_rmdir does not decrement victim's linkcount at all, 
+    and so the storage allocated to the victim cannot be reclaimed (-0.5)
+  
+
+TOTAL (57/60)

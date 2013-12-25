@@ -1,0 +1,105 @@
+Group07
+Marks for Assignment 3
+======================
+
+TESTER:
+palin kernel-ASST3-NORAND, PASS
+palin kernel-ASST3-RAND, PASS
+matmult kernel-ASST3-NORAND, PASS
+matmult kernel-ASST3-RAND, PASS
+sort kernel-ASST3-NORAND, PASS
+sort kernel-ASST3-RAND, PASS
+huge kernel-ASST3-NORAND, PASS
+huge kernel-ASST3-RAND, PASS
+sort + matmult kernel-ASST3-NORAND, PASS
+sort + matmult kernel-ASST3-RAND, PASS
+huge + matmult + sort kernel-ASST3-NORAND, PASS
+huge + matmult + sort kernel-ASST3-RAND, FAIL - Assertion failed in mmu_map
+
+
+Page Fault Handling - lpage_fault               17 / 20   
+--------------------------------------
+    - handles fault on valid page
+      - page marked dirty for write or read-only faults
+      --> runs in-core test (e.g. testbin/palin)   
+    - handles fault on invalid page
+      - page frame allocated
+      - page read in from swap
+  
+  Comments:    
+  - for VM_FAULT_READONLY, you immediately mark the page dirty and map into mmu.
+    This is dangerous - you only know the lpage was valid when the fault happened.
+    It could have been evicted by another process before you get to this line
+    in lpage_fault. This sometimes causes a panic in the concurrent tests when
+    paddr 0 is passed to mmu_map. This case should also be counted as a minor 
+    fault. (-2)
+  - Your code forces an extra minor fault by always mapping newly read pages
+    as read-only (because they are not yet dirty), even if the faulttype 
+    is VM_FAULT_WRITE. (-1)
+
+
+Page eviction - lpage_evict			18 / 20
+--------------------------------------------
+    - frees/invalidates evicted page
+      - lpage marked invalid
+    - dirty pages written to swap
+      --> runs matmult:
+      --> runs sort:
+      --> runs huge:
+    - clean pages not written again
+      --> counts of discarded and written pages (shown by "vm" command
+      after running matmult, sort, huge) are sensible: 
+
+  Comments:
+  - must mark lpage as INVALID before releasing lock and starting page out,
+    otherwise owning process could continue to use this lpage and modify it
+    while the page out is in progress, causing the modifications to be lost (-2)
+
+
+Page replacement - SEQUENTIAL                      9 / 10
+------------------------------
+    - coremap entry selected with sequential scan (4)
+    - will not replace kernel or pinned pages (3)
+    - handles impossible (error) cases (3)
+      - will not loop forever
+
+  Comments:
+  - Logic for sequential replacement is convoluted and a bit off. With
+    68 coremap entries, on first call to page_replace, search starts at 
+    index 66 (not 67).  Still, nice to see you are working from high to low.
+  - Return of -1 is not useful. Should just panic() with a helpful message. (-1)
+
+Page replacement - RANDOM                          9 / 10
+---------------------------
+    - coremap entry selected randomly (4)
+    - will not replace kernel or pinned pages (3)
+    - handles impossible (error) cases (3)
+      - will not loop forever
+
+  Comments:
+  - Returning -1 from a function that returns an unsigned int is not very
+    useful, especially if the caller is not checking for unexpectedly 
+    large values. Should just panic() with a meaningful error message 
+    instead. (-1)
+
+
+Synchronization                                 8 / 10
+-------------------
+    - runs concurrent test programs without apparent deadlock
+      (sort + matmult, sort + matmult + huge, started from menu)
+      --> sort + matmult
+      --> huge + matmult + sort
+    - visual inspection of the code appears to be following 
+      correct lock discipline
+
+  Comments:
+  - stats_spinlock is not held while updating stats (-2)
+
+Code Review                                     10 / 10
+-------------------
+    - clean, well-commented and readable code
+
+===============================================================================
+
+Total                                           71 / 80
+

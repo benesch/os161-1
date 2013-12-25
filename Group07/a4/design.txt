@@ -1,0 +1,80 @@
+*** File Table Design ***
+We created a separate struct filetable_entry. This entry contains
+a pointer to the vnode of the file, seek position, open flags, and
+a count that is the number of file descriptor pointing to this entry.
+
+In runprogram method when a new user program is started, a filetable
+is created for that thread. One filetable_entry is created with console
+vnode with O_RDWR, and first three file point to the same
+filetable_entry object. The rest are initialized to NULL.
+
+When a file is opened, we create a filetable_entry object with vnode
+of the given file name and insert the entry into an open slot in
+the filetable. The ft_count is set to 1 and position is set to 0.
+
+When a file is closed, we decrement the ft_count value, and if it is 0,
+meaning there is no file descriptor referring to this filetable_entry,
+we call vfs_close to actually close the file.
+
+When dup2 is called, we close the existing newfd if it is open, and make
+newfd point to oldfd's filetable_entry, and increment ft_count of that
+entry. This is to make sure while there is a file descriptor pointing to
+that filetable_entry, vfs_close is not called for that vnode in this
+thread. Since the file descriptors point to the same filetable_entry,
+they share seek position and flags as well.
+
+When the process exits, for each file descriptor that has a valid
+filetable_entry, file_close is called. Deciding whether the vnode needs
+vfs_close or not and freeing the filetable_entry will be handled inside
+the call to file_close.
+
+
+
+*** Subdirectory Functions in SFS ***
+
+sfs_mkdir - Look up the given name in the parent directory, and make sure
+an entry does not exist. Create a new directory entry in the given parent
+directory's vnode, and initialize the first two entries in the newly created
+directory and ensure that the new entries are linked appropriately to 
+itself and its parent directory. In addition, increment the linkcount of the
+parent directory and set the linkcount of the new subdirectory to 1. 
+
+sfs_rmdir - First, check that the name argument is not "." or "..", and then
+look up the directory to be removed and check that it is empty before moving on
+with removing the directory. This is done by counting the number of used slots.
+"." and ".." will take up 2 slots, and if the number of used slots is greater
+than 2, then the directory is not empty. Prior to unlinking the directory entry,
+the ".." directory is unlinked and the linkcount for the parent directory is 
+decremented. Finally, unlink the targeted directory entry from the parent directory.
+
+sfs_lookparent - If the directory is root, return itself. If not,
+manipulate the path to get the string before last '/' to get the path
+to the parent directory, and use sfs_lookup to return vnode for the
+parent directory.
+
+sfs_lookup - Split the path string into directory names by using strchr
+function with character '/'. Using sfs_lookonce call and given vnode,
+find the next directory vnode (starting with the left-most directory
+string portion). Set the current vnode to the found vnode. Repeat this
+(using current vnode for sfs_lookonce call) for the next directory name.
+Repeat this until we reach the end of the directory list in given path
+string. Return the vnode for the last directory that we reach.
+
+sfs_namefile - Using the string ".." and sfs_lookonce function call
+to find the parent directory, recursively find parent directory starting
+at given vnode to reach the root. Inside the loop, append the current
+vnode's filename (found by looping through the parent's directory) to
+front of the path string that is to be returned.
+
+
+*** Single Biggest Challenge for this Assignment ***
+One of the biggest challenges faced in this assignment is figuring out
+the link count and reference counts when handling the sfs functionalities.
+Regarding ref counts, it got confusing due to looping required to find the vnode,
+and sequentially discarding the unused vnode. The concept behind it became immediately 
+clear when there is a look up for a vnode and its refcount is incremented. Consequently,
+the vnode's refcount needs to decremented, and thus, the vnode discarded when
+the function returns. On the other hand, link counts became clear when we realize
+a directory's link count is incremented only when a directory entry refers to it.
+
+
